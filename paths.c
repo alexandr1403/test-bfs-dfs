@@ -164,7 +164,7 @@ void func(LIST *path, bool *visited)
     }
 }
 
-void Dfs(int head, int src, int res, PATHS *path, size_t n, EDGE **graph, int *verticles, bool *visited)
+void Dfs(int src, int res, PATHS *path, size_t n, EDGE **graph, int *verticles, bool *visited)
 {
     if (src == res)
         return;
@@ -174,20 +174,13 @@ void Dfs(int head, int src, int res, PATHS *path, size_t n, EDGE **graph, int *v
         puts("noo(");
         exit(EXIT_FAILURE);
     }
-    // visited[4] = false;
     visited[src] = true;
     for (int i = 0; i < n; i++)
     {
 
         if (graph[src][i].len > 0)
         {
-            if (i == head)
-            {
-                visited[src] = false;
-                // func(path->last, visited);
-                continue;
-            }
-            if (!visited[i]) // проверять для каждого списка из path
+            if (!visited[i])
             {
                 LIST *new_list = NULL;
 
@@ -211,16 +204,12 @@ void Dfs(int head, int src, int res, PATHS *path, size_t n, EDGE **graph, int *v
                             insert_in_list(path->last, i, &(graph[src][i]));
                     }
                 }
-                // if (i == res)
-                //     break;
 
-                verticles[src]++; // verticles[i]-?
-                Dfs(head, i, res, path, n, graph, verticles, visited);
+                verticles[src]++;
+                Dfs(i, res, path, n, graph, verticles, visited);
+                visited[i] = false;
             }
         }
-        // for (int j = src; j < n; j++)
-        //     // if (j != i && j != src && j != head)
-        //     visited[j] = false;
     }
 }
 
@@ -240,17 +229,20 @@ void Bfs(int src, int res, PATHS *path, size_t n, EDGE **graph)
             continue;
         for (int i = 0; i < n; i++)
         {
-            if (graph[vert->num][i].len > 0 && !visited[i])
+            if (graph[vert->num][i].len > 0)
             {
                 queue_add(queue, i, &(graph[vert->num][i]));
-                visited[i] = true;
                 LIST *new_list = NULL;
 
                 if (verticles[vert->num] > 0)
                 {
-                    new_list = copy_list(path->last, vert->num);
-                    insert_in_list(new_list, i, &(graph[vert->num][i]));
-                    insert_in_path(path, new_list);
+                    for (LIST *curr = path->first; curr != NULL; curr = curr->next)
+                        if (curr->tail->num == vert->num && !(curr->visited[i]))
+                        {
+                            new_list = copy_list(curr, vert->num);
+                            insert_in_list(new_list, i, &(graph[vert->num][i]));
+                            insert_in_path(path, new_list);
+                        }
                 }
                 else
                 {
@@ -263,11 +255,12 @@ void Bfs(int src, int res, PATHS *path, size_t n, EDGE **graph)
                     else // добавить поиск списка по крайней вершине (проверять на совпадение с vert->num)
                     {
                         for (LIST *curr = path->first; curr != NULL; curr = curr->next)
-                            if (curr->tail->num == vert->num)
+                            if (curr->tail->num == vert->num && !(curr->visited[i]))
                                 insert_in_list(curr, i, &(graph[vert->num][i]));
                     }
                 }
 
+                visited[i] = true;
                 verticles[vert->num]++;
             }
         }
@@ -346,8 +339,9 @@ int main()
     }
 
     show_graph(7, graph);
-    // Dfs(0, 0, 5, path, 7, graph, verticles, visited);
-    Bfs(0, 5, path, 7, graph);
+    Dfs(0, 5, path, 7, graph, verticles, visited);
+    // Bfs(0, 5, path, 7, graph);
+
     printf("count: %d\n", path->count);
     show_paths(path);
     free(verticles);
